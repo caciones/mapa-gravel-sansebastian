@@ -1,43 +1,79 @@
 <!DOCTYPE html>
-<html lang='pt'>
+<html lang="pt">
 <head>
-<meta charset='utf-8'/>
+<meta charset="utf-8"/>
 <title>Mapa Interativo – Rotas Gravel desde San Sebastián</title>
-<link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'/>
-<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
-html, body { margin:0; padding:0; }
-#map { height:100vh; width:100vw; }
+  html, body { margin: 0; padding: 0; }
+  #map { height: 100vh; width: 100vw; }
 </style>
 </head>
-<body>
-<div id='map'></div>
-<script>
-  var map = L.map('map').setView([43.0, -2.0], 8);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+<body>
+<div id="map"></div>
+
+<script>
+  // Mapa base
+  var map = L.map("map").setView([43.0, -2.0], 8);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
-    attribution: '© OpenStreetMap contributors'
+    attribution: "© OpenStreetMap contributors"
   }).addTo(map);
 
-  function addRoute(points, color, name) {
+  // Função para adicionar rotas
+  function addRoute(points, color) {
     var latlngs = points.map(p => [p[1], p[0]]);
-    var poly = L.polyline(latlngs, {color: color, weight: 4}).addTo(map);
-    latlngs.forEach((ll, i) => {
-      L.circleMarker(ll, {radius:5, color:color, fillOpacity:0.8})
-        .bindPopup(points[i][2])
-        .addTo(map);
+    L.polyline(latlngs, { color: color, weight: 4 }).addTo(map);
+
+    points.forEach(p => {
+      L.circleMarker([p[1], p[0]], {
+        radius: 5,
+        color: color,
+        fillOpacity: 0.8
+      }).bindPopup(p[2]).addTo(map);
     });
-    return poly;
   }
 
-  var rota1 = [(-1.98, 43.32, 'San Sebastián'), (-1.9, 43.05, 'Andoain'), (-1.75, 42.95, 'Leitza'), (-1.88, 42.92, 'Lekunberri'), (-2.15, 42.85, 'Urbasa'), (-2.67, 42.85, 'Vitoria-Gasteiz'), (-2.45, 42.47, 'Logroño')];
-  var rota2 = [(-1.98, 43.32, 'San Sebastián'), (-2.25, 43.3, 'Zumaia'), (-2.5, 43.18, 'Markina-Xemein'), (-2.93, 43.26, 'Bilbao'), (-2.72, 43.02, 'Areatza (Gorbea)'), (-2.67, 42.85, 'Vitoria-Gasteiz')];
-  var rota3 = [(-1.98, 43.32, 'San Sebastián'), (-1.79, 43.35, 'Hondarribia'), (-1.47, 43.49, 'Bayonne'), (-1.45, 43.31, 'Espelette'), (-1.24, 43.16, 'Saint-Jean-Pied-de-Port')];
+  // ✅ DADOS CORRIGIDOS (arrays JS)
+  var rota1 = [
+    [-1.98, 43.32, "San Sebastián"],
+    [-1.90, 43.05, "Andoain"],
+    [-1.75, 42.95, "Leitza"],
+    [-1.88, 42.92, "Lekunberri"],
+    [-2.15, 42.85, "Urbasa"],
+    [-2.67, 42.85, "Vitoria-Gasteiz"],
+    [-2.45, 42.47, "Logroño"]
+  ];
 
-  addRoute(rota1, 'green', 'San Sebastián → Logroño');
-  addRoute(rota2, 'orange', 'Costa + Gorbea → Vitoria');
-  addRoute(rota3, 'blue', 'País Basco → França (SJPP)');
+  var rota2 = [
+    [-1.98, 43.32, "San Sebastián"],
+    [-2.25, 43.30, "Zumaia"],
+    [-2.50, 43.18, "Markina-Xemein"],
+    [-2.93, 43.26, "Bilbao"],
+    [-2.72, 43.02, "Areatza (Gorbea)"],
+    [-2.67, 42.85, "Vitoria-Gasteiz"]
+  ];
+
+  var rota3 = [
+    [-1.98, 43.32, "San Sebastián"],
+    [-1.79, 43.35, "Hondarribia"],
+    [-1.47, 43.49, "Bayonne"],
+    [-1.45, 43.31, "Espelette"],
+    [-1.24, 43.16, "Saint-Jean-Pied-de-Port"]
+  ];
+
+  // Desenhar rotas
+  addRoute(rota1, "green");
+  addRoute(rota2, "orange");
+  addRoute(rota3, "blue");
 </script>
 </body>
 </html>
