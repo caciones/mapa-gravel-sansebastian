@@ -2,39 +2,70 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8"/>
-<title>Mapa Interativo – Rotas Gravel desde San Sebastián</title>
+<title>Rotas Gravel – San Sebastián</title>
 
 <!-- Leaflet -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <!-- Leaflet GPX -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 
 <!-- Leaflet Elevation -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet-elevation/dist/leaflet-elevation.min.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-elevation/dist/leaflet-elevation.min.css"/>
 <script src="https://unpkg.com/leaflet-elevation/dist/leaflet-elevation.min.js"></script>
 
 <style>
-  html, body {
+  body {
     margin: 0;
-    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f5f5;
+  }
+
+  /* Container geral */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* Mapa em formato quadrado */
+  .map-wrapper {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 2px solid #ccc;
+    margin-bottom: 20px;
   }
 
   #map {
-    height: 100vh;
-    width: 100vw;
+    width: 100%;
+    height: 100%;
   }
+
+  /* Tabela */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+  }
+
+  th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+
+  th {
+    background: #eee;
+  }
+
+  .rota1 { color: green; font-weight: bold; }
+  .rota2 { color: orange; font-weight: bold; }
+  .rota3 { color: blue; font-weight: bold; }
 
   .legend {
     background: white;
-    padding: 10px;
+    padding: 8px;
     font-size: 13px;
     line-height: 18px;
     box-shadow: 0 0 6px rgba(0,0,0,0.3);
@@ -44,14 +75,58 @@
     width: 14px;
     height: 14px;
     float: left;
-    margin-right: 8px;
-    opacity: 0.9;
+    margin-right: 6px;
   }
 </style>
 </head>
 
 <body>
-<div id="map"></div>
+<div class="container">
+
+  <!-- MAPA -->
+  <div class="map-wrapper">
+    <div id="map"></div>
+  </div>
+
+  <!-- TABELA DE ROTAS -->
+  <table>
+    <thead>
+      <tr>
+        <th>Rota</th>
+        <th>Descrição</th>
+        <th>GPX / Links</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="rota1">🟢 Rota 1</td>
+        <td>San Sebastián → Logroño (≈ 350–370 km)</td>
+        <td>
+          <a href="gpx/rota1.gpx" target="_blank">GPX</a> |
+          <a href="https://www.komoot.com" target="_blank">Komoot</a> |
+          <a href="https://www.wikiloc.com" target="_blank">Wikiloc</a>
+        </td>
+      </tr>
+      <tr>
+        <td class="rota2">🟠 Rota 2</td>
+        <td>Costa Basca + Gorbea → Vitoria (≈ 320 km)</td>
+        <td>
+          <a href="gpx/rota2.gpx" target="_blank">GPX</a> |
+          <a href="https://www.komoot.com" target="_blank">Komoot</a>
+        </td>
+      </tr>
+      <tr>
+        <td class="rota3">🔵 Rota 3</td>
+        <td>País Basco → França (SJPP) (≈ 330–350 km)</td>
+        <td>
+          <a href="gpx/rota3.gpx" target="_blank">GPX</a> |
+          <a href="https://www.wikiloc.com" target="_blank">Wikiloc</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
 
 <script>
 /* =========================
@@ -67,126 +142,64 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 /* =========================
    PERFIL DE ELEVAÇÃO
 ========================= */
-var elevationControl = L.control.elevation({
+var elevation = L.control.elevation({
   position: "bottomleft",
-  theme: "steelblue-theme",
-  width: 420,
-  height: 160,
-  margins: { top: 10, right: 20, bottom: 30, left: 50 },
-  useHeightIndicator: true,
-  interpolation: "linear",
-  hoverNumber: {
-    decimalsX: 1, // km
-    decimalsY: 0  // metros
-  }
+  width: 300,
+  height: 120,
+  theme: "steelblue-theme"
 }).addTo(map);
 
 /* =========================
    GRUPOS DE ROTAS
 ========================= */
-var rota1Layer = L.layerGroup();
-var rota2Layer = L.layerGroup();
-var rota3Layer = L.layerGroup();
+var r1 = L.layerGroup().addTo(map);
+var r2 = L.layerGroup().addTo(map);
+var r3 = L.layerGroup().addTo(map);
 
 /* =========================
-   FUNÇÃO AUXILIAR GPX
+   FUNÇÃO GPX
 ========================= */
-function carregarGPX(url, cor, nomeRota, layerGroup) {
-  return new L.GPX(url, {
+function loadGPX(url, color, name, group) {
+  new L.GPX(url, {
     async: true,
-    polyline_options: {
-      color: cor,
-      weight: 4
-    }
-  })
-  .on("loaded", function(e) {
-    var km = (e.target.get_distance() / 1000).toFixed(1);
+    polyline_options: { color: color, weight: 4 }
+  }).on("loaded", function(e) {
+    elevation.clear();
+    elevation.addData(e.target);
 
-    e.target.bindPopup(
-      "<b>" + nomeRota + "</b><br>" +
-      "Distância total: <b>" + km + " km</b>"
-    );
-
-    elevationControl.clear();
-    elevationControl.addData(e.target);
-  })
-  .addTo(layerGroup);
+    e.target.bindPopup("<b>" + name + "</b>");
+  }).addTo(group);
 }
 
 /* =========================
-   GPX DAS ROTAS
-   👉 SUBSTITUI OS LINKS
+   CARREGAR ROTAS
 ========================= */
-
-// 🟢 ROTA 1
-carregarGPX(
-  "https://SEU_LINK_GPXX_AQUI/rota1_sansebastian_logrono.gpx",
-  "green",
-  "Rota 1 – San Sebastián → Logroño",
-  rota1Layer
-);
-
-// 🟠 ROTA 2
-carregarGPX(
-  "https://SEU_LINK_GPXX_AQUI/rota2_costa_gorbea_vitoria.gpx",
-  "orange",
-  "Rota 2 – Costa + Gorbea → Vitoria",
-  rota2Layer
-);
-
-// 🔵 ROTA 3
-carregarGPX(
-  "https://SEU_LINK_GPXX_AQUI/rota3_franca_sjpp.gpx",
-  "blue",
-  "Rota 3 – País Basco → França (SJPP)",
-  rota3Layer
-);
+loadGPX("gpx/rota1.gpx", "green", "Rota 1 – San Sebastián → Logroño", r1);
+loadGPX("gpx/rota2.gpx", "orange", "Rota 2 – Costa + Gorbea → Vitoria", r2);
+loadGPX("gpx/rota3.gpx", "blue", "Rota 3 – País Basco → França", r3);
 
 /* =========================
-   CONTROLOS LIGAR/DESLIGAR
+   CONTROLOS
 ========================= */
-var overlays = {
-  "🟢 Rota 1 – San Sebastián → Logroño": rota1Layer,
-  "🟠 Rota 2 – Costa + Gorbea → Vitoria": rota2Layer,
-  "🔵 Rota 3 – País Basco → França": rota3Layer
-};
-
-L.control.layers(null, overlays, {
-  collapsed: false
-}).addTo(map);
-
-// Ativar todas por defeito
-rota1Layer.addTo(map);
-rota2Layer.addTo(map);
-rota3Layer.addTo(map);
+L.control.layers(null, {
+  "🟢 Rota 1": r1,
+  "🟠 Rota 2": r2,
+  "🔵 Rota 3": r3
+}, { collapsed: false }).addTo(map);
 
 /* =========================
-   ATUALIZAR PERFIL AO MUDAR ROTA
-========================= */
-map.on("overlayadd", function(e) {
-  elevationControl.clear();
-  e.layer.eachLayer(function(layer) {
-    if (layer instanceof L.GPX) {
-      elevationControl.addData(layer);
-    }
-  });
-});
-
-/* =========================
-   LEGENDA FIXA
+   LEGENDA
 ========================= */
 var legend = L.control({ position: "bottomright" });
-
 legend.onAdd = function () {
   var div = L.DomUtil.create("div", "legend");
   div.innerHTML =
-    "<b>Rotas Gravel</b><br>" +
-    "<i style='background:green'></i> San Sebastián → Logroño<br>" +
-    "<i style='background:orange'></i> Costa + Gorbea → Vitoria<br>" +
-    "<i style='background:blue'></i> País Basco → França (SJPP)";
+    "<b>Rotas</b><br>" +
+    "<i style='background:green'></i> Rota 1<br>" +
+    "<i style='background:orange'></i> Rota 2<br>" +
+    "<i style='background:blue'></i> Rota 3";
   return div;
 };
-
 legend.addTo(map);
 </script>
 </body>
